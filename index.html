@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paywall News - App (Actualizado)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+/* === THEMES (Light/Dark) Added Without Breaking Original === */
+
+body.light {
+  --bg:#ffffff;
+  --card:#f2f2f2;
+  --text:#222;
+  --muted:#555;
+  --accent:#ff3b30;
+  --overlay:rgba(0,0,0,0.55);
+  --watermark:rgba(0,0,0,0.10);
+}
+
+body.dark {
+  --bg:#0b0b0d;
+  --card:#111217;
+  --text:#ffffff;
+  --muted:#9aa0a6;
+  --accent:#ff3b30;
+  --overlay:rgba(0,0,0,0.6);
+  --watermark:rgba(255,255,255,0.12);
+}
+
+body.light, body.dark {
+  transition: background .3s, color .3s;
+}
+:root{ --accent:#ff3b30; --bg:#0b0b0d; --card:#111217; --muted:#9aa0a6; --glass: rgba(255,255,255,0.03); }
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+
+header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:linear-gradient(180deg,#07070a,#0a0a0d);border-bottom:1px solid rgba(255,255,255,0.03);position:sticky;top:0;z-index:50}
+.brand {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.brand .logo {
+  max-height: 40px;   /* 🔴 clave */
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+
+.container{padding:12px;padding-bottom:110px}
+
+/* MAP */
+.mapcard{height:320px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);margin-bottom:12px;position:relative;z-index:5}
+#map{height:100%;width:100%}
+.legend{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.55);padding:8px;border-radius:8px;font-size:13px;z-index:20}
+
+/* list & grid */
+.listcard{
+  background:var(--card);
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:12px;
+  color:var(--text);
+}
+;border:1px solid rgba(255,255,255,0.02)}
+.grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px;
+}
+
+@media (min-width:600px){
+  .grid{
+    grid-template-columns:repeat(3, 1fr);
+  }
+}
+
+/* === TARJETAS CUADRADAS === */
+.post{
+  background:var(--card);
+  border-radius:12px;
+  overflow:hidden;
+  position:relative;
+  aspect-ratio:1/1;
+  height:auto;
+  box-shadow:0 4px 14px rgba(0,0,0,0.25);
+  border:1px solid rgba(255,255,255,0.05);
+}
+
+.post img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* === MARCA DE AGUA DIAGONAL === */
+.post::after {
+  content:"Paywall News • Protected";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-weight:700;
+  color:var(--watermark);
+  transform:rotate(-28deg);
+  pointer-events:none;
+  user-select:none;
+}
+
+.post:hover img{transform:scale(1.03)}
+.post .overlay-title{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,0.6);padding:6px 8px;border-radius:6px;font-weight:700;font-size:13px}
+.post .badge-top{position:absolute;left:8px;top:8px;background:var(--accent);padding:6px 8px;border-radius:6px;font-weight:700;font-size:12px}
+.post .hashtags{position:absolute;left:8px;top:40px;font-size:11px;color:#cbd5db;padding-right:6px}
+
+/* watermark */
+.watermark {
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  background:rgba(0,0,0,0.6);
+  color:#fff;
+  padding:4px 6px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:700;
+  pointer-events:none;
+  z-index:15;
+}
+
+/* bottom nav */
+.bottom-nav{position:fixed;left:10px;right:10px;bottom:12px;background:linear-gradient(180deg,#071018,#061016);border-radius:16px;padding:8px 10px;display:flex;justify-content:space-around;box-shadow:0 8px 34px rgba(2,6,23,0.7);z-index:60}
+.nav-item{color:var(--muted);font-size:13px;text-align:center;cursor:pointer;padding:6px 8px}
+.nav-item.active{color:var(--accent);font-weight:700}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;padding:20px;z-index:200}
+.modal .box{
+  background:var(--card);
+  padding:16px;
+  border-radius:12px;
+  color:var(--text);
+}
+
+.btn{background:var(--accent);padding:10px;border-radius:8px;text-align:center;font-weight:700;color:#fff;cursor:pointer;margin-top:10px}
+
+/* Mis Noticias - layout */
+.section-title{font-weight:800;color:#fff;margin-bottom:8px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.small-card{background:var(--card);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);display:flex;gap:8px;align-items:center}
+.small-card img{width:72px;height:56px;object-fit:cover;border-radius:6px}
+
+/* statuses */
+.status-tag{padding:6px 8px;border-radius:8px;font-size:12px;font-weight:700}
+.status-for-sale{background:rgba(255,59,48,0.15);color:#ffb6b6}
+.status-in-review{background:rgba(255,204,0,0.12);color:#ffd87a}
+.status-sold{background:rgba(76,217,100,0.12);color:#bff0c8}
+
+/* === Inputs & selects adaptados a Light / Dark === */
+input,
+select,
+textarea {
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+  
+/* responsive */
+@media (max-width:420px){
+  .mapcard{height:260px}
+  .post{height:140px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+  <img src="logo-light.png" alt="Paywall News" class="logo">
+</div>
+
+  <div id="themeToggle" class="theme-toggle" style="font-size:22px;cursor:pointer;">🌞</div>
+</header>
+
+<div class="container">
+
+  <!-- HOME -->
+  <div id="view-home" class="view">
+    <div class="mapcard">
+      <div id="map"></div>
+      <div class="legend">
+        <span style="display:inline-block;width:10px;height:10px;background:#ff3b30;border-radius:50%;margin-right:6px"></span>Alta
+        <span style="display:inline-block;width:10px;height:10px;background:#ffcc00;border-radius:50%;margin:0 6px 0 12px"></span>Media
+        <span style="display:inline-block;width:10px;height:10px;background:#4cd964;border-radius:50%;margin:0 6px 0 12px"></span>Baja
+      </div>
+    </div>
+
+    
+
+    <div style="margin-top:6px"><strong>Últimas en venta</strong></div>
+    <div class="grid" style="margin-top:8px" id="gridFeed"></div>
+  </div>
+
+  <!-- EXPLORE -->
+  <div id="view-discover" class="view" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <input id="search" placeholder="Buscar #hashtags, lugares..." style="flex:1;padding:10px;border-radius:10px;border:none;background:#0e1012;color:#fff">
+    </div>
+    <div class="grid" id="discoverGrid"></div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div id="view-upload" class="view" style="display:none">
+    <div class="listcard">
+      <strong>Subir nuevo</strong>
+      <div style="margin-top:8px;color:#bfc6cb">Adjunta foto/video y añade título, tags, precio y licencia.</div>
+
+      <div style="margin-top:10px">
+        <input id="file" type="file" accept="image/*,video/*">
+      </div>
+
+      <div style="margin-top:8px"><input id="title" placeholder="Título de la noticia" style="width:100%;padding:10px;border-radius:8px;border:none;background:#0e1012;color:#fff"></div>
+
+      <div style="margin-top:8px"><input id="hashtags" placeholder="#hashtag1 #hashtag2" style="width:100%;padding:10px;border-radius:8px;border:none;background:#0e1012;color:#fff"></div>
+
+      <div style="margin-top:8px"><input id="price" placeholder="Precio USD" type="number" style="width:100%;padding:10px;border-radius:8px;border:none;background:#0e1012;color:#fff"></div>
+
+      <div style="margin-top:8px">
+        <select id="licenseType" style="width:100%;padding:10px;border-radius:8px;border:none;background:#0e1012;color:#fff">
+          <option value="exclusive">Licencia Exclusiva</option>
+          <option value="nonexclusive" selected>Licencia No Exclusiva</option>
+          <option value="geo">Licencia Geográfica Exclusiva</option>
+        </select>
+        <div id="licenseDesc" style="font-size:13px;color:#cbd5db;margin-top:6px">
+          Licencia No Exclusiva: el comprador puede usar el material pero no es exclusivo.
+        </div>
+      </div>
+
+      <div class="btn" onclick="simulateUpload()">Subir contenido</div>
+    </div>
+  </div>
+
+  <!-- MIS NOTICIAS (Ventas/Compras) -->
+  <div id="view-sales" class="view" style="display:none">
+    <div class="section-title">Mis Noticias</div>
+
+    <!-- Tabs simuladas -->
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:8px;font-weight:700">Ventas</div>
+      <div style="padding:8px 12px;background:transparent;border-radius:8px;color:#cbd5db">Compras</div>
+    </div>
+
+    <div style="margin-bottom:10px">
+      <strong>Ventas</strong>
+      <div id="salesList" style="margin-top:8px"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <strong>Compras</strong>
+      <div id="purchasesList" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- WALLET -->
+  <div id="view-wallet" class="view" style="display:none">
+    <div class="listcard">
+      <strong>Mi billetera</strong>
+      <div style="margin-top:8px;color:#bfc6cb">Saldo disponible: <strong>$250</strong></div>
+      <div class="btn" onclick="alert('Solicitud de retiro simulada')">Solicitar retiro</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav" id="bottomNav">
+  <div class="nav-item active" data-view="home" onclick="showView('home', this)">Inicio</div>
+  <div class="nav-item" data-view="discover" onclick="showView('discover', this)">Explorar</div>
+  <div class="nav-item" data-view="upload" onclick="showView('upload', this)">Subir</div>
+  <div class="nav-item" data-view="sales" onclick="showView('sales', this)">Mis Noticias</div>
+  <div class="nav-item" data-view="wallet" onclick="showView('wallet', this)">Billetera</div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal" onclick="closeModal()">
+  <div class="box" onclick="event.stopPropagation()">
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* === THEME TOGGLER (Light default) === */
+const themeToggle = document.getElementById("themeToggle");
+
+function applyTheme(theme) {
+  document.body.classList.remove("light", "dark");
+  document.body.classList.add(theme);
+  localStorage.setItem("theme", theme);
+  themeToggle.textContent = theme === "light" ? "🌞" : "🌙";
+}
+
+themeToggle.onclick = () => {
+  const newTheme = document.body.classList.contains("light") ? "dark" : "light";
+  applyTheme(newTheme);
+};
+
+// Default: light mode
+applyTheme(localStorage.getItem("theme") || "light");
+/* --- Datos de ejemplo mejorados --- */
+/* Cada item: id,title,price,lat,lng,importance,img,exclusive,licenseType,status,hashtags */
+const feed = [
+  {id:1,title:'Accidente en Av. Mitre',price:50,lat:-34.6037,lng:-58.3816,importance:'high',img:'https://picsum.photos/seed/news1/800/600',exclusive:false,licenseType:'nonexclusive',status:'for_sale',hashtags:'#accidente #tránsito'},
+  {id:2,title:'Manifestación frente al Congreso',price:120,lat:-34.6070,lng:-58.3772,importance:'medium',img:'https://picsum.photos/seed/news2/800/600',exclusive:true,licenseType:'exclusive',status:'for_sale',hashtags:'#manifestacion #política'},
+  {id:3,title:'Incendio en polígono industrial',price:80,lat:-34.6000,lng:-58.3900,importance:'low',img:'https://picsum.photos/seed/news3/800/600',exclusive:false,licenseType:'nonexclusive',status:'in_review',hashtags:'#incendio #industria'},
+  {id:4,title:'Corte en Ruta 9 por protesta',price:70,lat:-34.6050,lng:-58.3920,importance:'medium',img:'https://picsum.photos/seed/news4/800/600',exclusive:false,licenseType:'geo',status:'sold',hashtags:'#ruta9 #protesta'},
+  {id:5,title:'Accidente menor en zona norte',price:25,lat:-34.5990,lng:-58.3850,importance:'low',img:'https://picsum.photos/seed/news5/800/600',exclusive:false,licenseType:'nonexclusive',status:'for_sale',hashtags:'#choque'},
+  {id:6,title:'Fuga de gas en barrio sur',price:95,lat:-34.6080,lng:-58.3890,importance:'high',img:'https://picsum.photos/seed/news6/800/600',exclusive:false,licenseType:'nonexclusive',status:'for_sale',hashtags:'#gas #emergencia'}
+];
+
+/* compras de ejemplo */
+const purchases = [
+  {id:101,title:'Compra - Accidente en Av. Mitre',price:50,date:'2025-06-10'},
+  {id:102,title:'Compra - Manifestación frente al Congreso',price:120,date:'2025-06-11'}
+];
+
+/* Funciones de render */
+function renderGrid() {
+  const grid = document.getElementById('gridFeed');
+  grid.innerHTML='';
+  feed.forEach(item=>{
+    const div = document.createElement('div');
+    div.className='post';
+    // image
+    const img = document.createElement('img');
+    img.src = item.img;
+    img.alt = item.title;
+    div.appendChild(img);
+    // badge top: license or LIVE
+    const badge = document.createElement('div');
+    badge.className='badge-top';
+    badge.textContent = (item.licenseType === 'exclusive') ? 'EXCLUSIVO' : (item.licenseType === 'geo' ? 'GEO' : 'LIVE');
+    div.appendChild(badge);
+    // hashtags small
+    const h = document.createElement('div');
+    h.className='hashtags';
+    h.textContent = item.hashtags || '';
+    div.appendChild(h);
+    // title overlay
+    const t = document.createElement('div');
+    t.className='overlay-title';
+    t.textContent = item.title;
+    div.appendChild(t);
+    // watermark unless sold
+    const wm = document.createElement('div');
+    wm.className='watermark';
+    wm.textContent = (item.status === 'sold') ? '' : 'Paywall News';
+    if(item.status === 'sold') wm.style.display='none';
+    div.appendChild(wm);
+    // click
+    div.onclick = ()=> openDetail(item);
+    grid.appendChild(div);
+  });
+}
+
+/* Discover render: more posts with title + hashtags */
+function renderDiscover() {
+  const g = document.getElementById('discoverGrid');
+  g.innerHTML='';
+  // show more items (repeat feed with some copies to make it look larger)
+  const full = feed.concat(feed.map(f=>Object.assign({},f,{id:f.id+10})));
+  full.forEach(it=>{
+    const el = document.createElement('div');
+    el.className='post';
+    
+    el.innerHTML = `<img src="${it.img}" alt="${it.title}"><div class="badge-top">${it.licenseType==='exclusive'?'EXCLUSIVO': it.licenseType==='geo'?'GEO':'LIVE'}</div><div class="overlay-title" style="font-size:12px;bottom:6px">${it.title}</div><div class="hashtags" style="top:36px">${it.hashtags}</div>`;
+    el.onclick = ()=> openDetail(it);
+    g.appendChild(el);
+  });
+}
+
+/* Sales (Mis Noticias) render */
+function renderSales() {
+  const salesList = document.getElementById('salesList');
+  salesList.innerHTML = '';
+  // ventas: items that belong to this user - for demo use all feed items
+  feed.forEach(it=>{
+    const row = document.createElement('div');
+    row.className='small-card';
+    row.innerHTML = `<img src="${it.img}"><div style="flex:1"><div style="font-weight:800">${it.title}</div><div style="font-size:13px;color:#cbd5db">${it.hashtags||''}</div></div><div style="min-width:110px;text-align:right">`;
+    // status tag
+    const statusTag = document.createElement('div');
+    statusTag.className = 'status-tag ' + (it.status==='for_sale' ? 'status-for-sale' : it.status==='in_review' ? 'status-in-review' : 'status-sold');
+    statusTag.textContent = it.status==='for_sale' ? 'En venta' : it.status==='in_review' ? 'En revisión' : 'Vendida';
+    row.appendChild(statusTag);
+    row.innerHTML += `</div>`;
+    salesList.appendChild(row);
+  });
+
+  // purchases
+  const purchasesList = document.getElementById('purchasesList');
+  purchasesList.innerHTML = '';
+  purchases.forEach(p=>{
+    const row = document.createElement('div');
+    row.className='small-card';
+    row.innerHTML = `<img src="https://picsum.photos/seed/p${p.id}/200/150"><div style="flex:1"><div style="font-weight:800">${p.title}</div><div style="font-size:13px;color:#cbd5db">Comprado: ${p.date}</div></div><div style="min-width:80px;text-align:right"><div style="font-weight:800;color:#fff">$${p.price}</div></div>`;
+    purchasesList.appendChild(row);
+  });
+}
+
+/* Map setup */
+var map = L.map('map').setView([-34.6037, -58.3816], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+function colorForImportance(imp) {
+  if (imp==='high') return '#ff3b30';
+  if (imp==='medium') return '#ffcc00';
+  return '#4cd964';
+}
+
+/* === PINES TIPO GOTA (conservando clicks) === */
+feed.forEach(it=>{
+  
+  const pin = L.divIcon({
+    className:"",
+    html: `
+      <div style="
+        width:22px;
+        height:22px;
+        background:${colorForImportance(it.importance)};
+        border-radius:50% 50% 50% 0;
+        transform:rotate(45deg);
+        border:2px solid #fff;
+        box-shadow:0 2px 6px rgba(0,0,0,0.25);
+      "></div>
+    `
+  });
+
+  const marker = L.marker([it.lat, it.lng], { icon: pin }).addTo(map);
+  marker.on("click", () => openDetail(it));
+
+});
+
+
+/* Detail modal */
+function openDetail(item) {
+  const content = document.getElementById('modalContent');
+  // show license and status info and provide buy options
+  const licenseLabel = item.licenseType === 'exclusive' ? 'LICENCIA EXCLUSIVA' : item.licenseType === 'geo' ? 'LICENCIA GEO' : 'LICENCIA NO EXCLUSIVA';
+  const statusLabel = item.status === 'for_sale' ? 'En venta' : item.status === 'in_review' ? 'En revisión' : 'Vendida';
+  const buyExclusiveButton = item.licenseType === 'nonexclusive' && item.status !== 'sold' ? `<div style="margin-top:8px" class="btn" onclick="offerExclusive(${item.id},3)">Solicitar Exclusividad (X3)</div>` : '';
+  content.innerHTML = `
+    <h3 style="margin:0">${item.title}</h3>
+    <div style="color:#cbd5db;font-size:13px;margin-top:6px">${item.hashtags||''}</div>
+    <img src="${item.img}" style="width:100%;border-radius:10px;margin-top:8px">
+    <p style="color:#cbd5db;margin-top:8px">Precio base: <strong>$${item.price}</strong> • ${licenseLabel} • Estado: <strong>${statusLabel}</strong></p>
+    <div style="display:flex;gap:8px">
+      <div class="btn" onclick="buyNonExclusive(${item.id})">Comprar (No exclusiva) - $${item.price}</div>
+      ${buyExclusiveButton}
+    </div>
+  `;
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+
+/* simulate non-exclusive purchase */
+function buyNonExclusive(id) {
+  const it = feed.find(x=>x.id===id);
+  if(!it) return alert('Artículo no encontrado');
+  if(it.status === 'in_review') return alert('Contenido en revisión. No disponible para compra.');
+  alert('Compra simulada: ' + it.title + ' por $' + it.price);
+  // add to purchases sample
+  purchases.push({id: 200+id, title: 'Compra - ' + it.title, price: it.price, date: new Date().toISOString().slice(0,10)});
+  renderSales();
+  closeModal();
+}
+
+/* offerExclusive: simulate buyer offering X multiplier (here we use fixed X3 for demo) */
+function offerExclusive(id,mult) {
+  const it = feed.find(x=>x.id===id);
+  if(!it) return;
+  // block item temporarily
+  it.status = 'in_review'; // temporary block
+  renderGrid();
+  renderSales();
+  alert('Oferta de exclusividad enviada: ' + (it.price*mult) + ' USD (X' + mult + '). Vendedor tiene 30 min. (simulado)');
+  closeModal();
+  // For demo: after 3s automatically mark accepted and sold
+  setTimeout(()=>{
+    it.status = 'sold';
+    // in a real flow you'd create licence_requests with expiresAt
+    renderGrid();
+    renderSales();
+    alert('Oferta aceptada (simulado). Contenido vendido como exclusivo.');
+  },3000);
+}
+
+/* simulateUpload: when user uploads we push into feed with status in_review */
+function simulateUpload(){
+  const fileEl = document.getElementById('file');
+  const title = document.getElementById('title').value || 'Sin título';
+  const hashtags = document.getElementById('hashtags').value || '';
+  const price = Number(document.getElementById('price').value) || 10;
+  const license = document.getElementById('licenseType').value || 'nonexclusive';
+
+  // create a placeholder image (picsum)
+  const newId = Math.max(...feed.map(f=>f.id))+1;
+  const img = 'https://picsum.photos/seed/news' + newId + '/800/600';
+  const newItem = {id:newId,title:title,price:price,lat:-34.6037+Math.random()*0.01,lng:-58.3816+Math.random()*0.01,importance:'medium',img:img,exclusive:(license==='exclusive'),licenseType:license,status:'in_review',hashtags:hashtags};
+  feed.unshift(newItem);
+  alert('Contenido subido (simulado). Estado: En revisión.');
+  // reset form
+  document.getElementById('title').value='';
+  document.getElementById('hashtags').value='';
+  document.getElementById('price').value='';
+  document.getElementById('file').value='';
+  renderGrid();
+  renderSales();
+}
+
+/* render sales/purchases initial */
+function showView(view, el) {
+  document.querySelectorAll('.view').forEach(v=>v.style.display='none');
+  document.getElementById('view-'+view).style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if (view==='home') { renderGrid(); map.invalidateSize(); }
+  if (view==='discover') { renderDiscover(); }
+  if (view==='upload') { /* nothing extra */ }
+  if (view==='sales') { renderSales(); }
+  if (view==='wallet') { /* nothing extra */ }
+}
+
+/* initial render */
+renderGrid();
+renderDiscover();
+renderSales();
+
+/* close modal on overlay click */
+document.getElementById('modal').addEventListener('click', closeModal);
+
+/* ensure map resizes when showing home */
+window.addEventListener('orientationchange', ()=> setTimeout(()=> map.invalidateSize(),500));
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
