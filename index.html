@@ -203,6 +203,27 @@ input::placeholder {
 
 <div class="container">
 
+<!-- PERFIL -->
+<div id="view-profile" class="view" style="display:none">
+  <div class="section-title">Mi perfil</div>
+
+  <div class="listcard">
+    <strong>Usuario principal</strong><br>
+    <span style="color:var(--muted)">juan.perez@email.com</span><br>
+    <span style="color:var(--muted)">Cuenta verificada</span>
+  </div>
+
+  <div class="listcard">
+    <div class="btn" onclick="showView('accounts')">Cuentas vinculadas</div>
+    <div class="btn" style="opacity:.6">Seguridad (próximamente)</div>
+    <div class="btn" style="opacity:.6">Preferencias</div>
+  </div>
+
+  <div class="listcard">
+    <div class="btn" style="background:#444">Cerrar sesión</div>
+  </div>
+</div>
+
   <!-- HOME -->
   <div id="view-home" class="view">
     <div class="mapcard">
@@ -565,6 +586,7 @@ window.addEventListener('orientationchange', ()=> setTimeout(()=> map.invalidate
 </script>
 </body>
 </html>
+
 
 
 
