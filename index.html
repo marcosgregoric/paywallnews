@@ -192,7 +192,13 @@ input::placeholder {
   <img src="logo-light.png" alt="Paywall News" class="logo">
 </div>
 
-  <div id="themeToggle" class="theme-toggle" style="font-size:22px;cursor:pointer;">🌞</div>
+  <div style="display:flex;align-items:center;gap:14px">
+  <div id="themeToggle" style="font-size:22px;cursor:pointer;">🌞</div>
+  <div onclick="showView('profile')" style="font-size:22px;cursor:pointer">
+    👤
+  </div>
+</div>
+
 </header>
 
 <div class="container">
@@ -559,6 +565,7 @@ window.addEventListener('orientationchange', ()=> setTimeout(()=> map.invalidate
 </script>
 </body>
 </html>
+
 
 
 
