@@ -224,6 +224,54 @@ input::placeholder {
   </div>
 </div>
 
+<!-- CUENTAS -->
+<div id="view-accounts" class="view" style="display:none">
+
+  <div class="section-title">Cuentas vinculadas</div>
+
+  <!-- Subcuenta 1 -->
+  <div class="small-card" style="margin-bottom:10px">
+    <img src="https://picsum.photos/seed/user1/100/100">
+    <div style="flex:1">
+      <div style="font-weight:800">Cuenta 1</div>
+      <div style="font-size:13px;color:var(--muted)">12 archivos enviados</div>
+    </div>
+  </div>
+
+  <!-- Subcuenta 2 -->
+  <div class="small-card" style="margin-bottom:10px">
+    <img src="https://picsum.photos/seed/user2/100/100">
+    <div style="flex:1">
+      <div style="font-weight:800">Cuenta 2</div>
+      <div style="font-size:13px;color:var(--muted)">7 archivos enviados</div>
+    </div>
+  </div>
+
+  <!-- Subcuenta 3 -->
+  <div class="small-card" style="margin-bottom:16px">
+    <img src="https://picsum.photos/seed/user3/100/100">
+    <div style="flex:1">
+      <div style="font-weight:800">Cuenta 3</div>
+      <div style="font-size:13px;color:var(--muted)">3 archivos enviados</div>
+    </div>
+  </div>
+
+  <!-- Espacios 4 y 5 -->
+  <div class="small-card" style="margin-bottom:10px;opacity:0.6">
+    <div style="flex:1;font-weight:700">Subcuenta 4 disponible</div>
+  </div>
+
+  <div class="small-card" style="margin-bottom:16px;opacity:0.6">
+    <div style="flex:1;font-weight:700">Subcuenta 5 disponible</div>
+  </div>
+
+  <!-- Botón agregar -->
+  <div class="btn" onclick="alert('Agregar subcuenta (simulado)')">
+    Agregar subcuenta
+  </div>
+
+</div>
+
   <!-- HOME -->
   <div id="view-home" class="view">
     <div class="mapcard">
@@ -586,6 +634,7 @@ window.addEventListener('orientationchange', ()=> setTimeout(()=> map.invalidate
 </script>
 </body>
 </html>
+
 
 
 
